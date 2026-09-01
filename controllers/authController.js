@@ -46,3 +46,37 @@ exports.getMe = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+// @desc    Toggle product in wishlist (add if not exists, remove if exists)
+// @route   PUT /api/auth/wishlist/:productId
+// @access  Private
+exports.toggleWishlist = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const productId = req.params.productId;
+    const index = user.wishlist.findIndex((id) => id.toString() === productId);
+
+    if (index > -1) {
+      user.wishlist.splice(index, 1);
+    } else {
+      user.wishlist.push(productId);
+    }
+
+    await user.save();
+    res.status(200).json({ success: true, data: user.wishlist });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};
+
+// @desc    Get logged-in user's wishlist (with full product details)
+// @route   GET /api/auth/wishlist
+// @access  Private
+exports.getWishlist = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).populate('wishlist');
+    res.status(200).json({ success: true, data: user.wishlist });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};

@@ -74,3 +74,42 @@ exports.deleteProduct = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+// @desc    Add a review to a product
+// @route   POST /api/products/:id/reviews
+// @access  Private
+exports.addReview = async (req, res) => {
+  try {
+    const { rating, comment } = req.body;
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({ success: false, error: 'Product not found' });
+    }
+
+    const alreadyReviewed = product.reviews.find(
+      (r) => r.user.toString() === req.user.id.toString()
+    );
+
+    if (alreadyReviewed) {
+      return res.status(400).json({ success: false, error: 'لقد قمت بتقييم هذا المنتج من قبل' });
+    }
+
+    const review = {
+      user: req.user.id,
+      name: req.user.name,
+      rating: Number(rating),
+      comment,
+    };
+
+    product.reviews.push(review);
+    product.numReviews = product.reviews.length;
+    product.rating =
+      product.reviews.reduce((sum, r) => sum + r.rating, 0) / product.reviews.length;
+
+    await product.save();
+    res.status(201).json({ success: true, data: product });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};
